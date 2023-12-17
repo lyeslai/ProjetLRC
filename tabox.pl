@@ -49,9 +49,14 @@ instR(vinci, joconde, aCree).
 % Tbox 
 tbox([(sculpteur,and(personne,some(aCree,sculpture))), (auteur,and(personne,some(aEcrit,livre))), (editeur,and(personne,and(not(some(aEcrit,livre)),some(aEdite,livre)))), (parent,and(personne,some(aEnfant,anything)))]).
 
+% Tbox qui ne fonctionne pas :
+/*
+chacal
+*/
+
 % Abox
 % assertion de concept
-aboxConcept([(michelAnge,personne), (david,sculpture), (sonnets,livre), (vinci,personne), (joconde,objet)]).
+abox_concept([(michelAnge,personne), (david,sculpture), (sonnets,livre), (vinci,personne), (joconde,objet)]).
 % assertions de rôles
-aboxRole([(michelAnge, david, aCree), (michelAnge, sonnets, aEcrit),(vinci, joconde, aCree)]).
+abox_role([(michelAnge, david, aCree), (michelAnge, sonnets, aEcrit),(vinci, joconde, aCree)]).
 

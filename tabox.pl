@@ -45,20 +45,3 @@ inst(joconde,objet).
 instR(michelAnge, david, aCree).
 instR(michelAnge, sonnets, aEcrit).
 instR(vinci, joconde, aCree).
-
-/*
-En faite, j'aurais pas dû définir la tbox et les deux liste de abox comme cela.
-Le fait que c'était présenté comme des listes dans le projet m'avait perturbé, mais en faite on doit récupérer ça avec setof.
-Par exemple, pour la tbox, il faut faire setof((ConceptNA, Expression), equiv(ConceptNA, Expression), Ma_tbox).
-
-*/
-% Tbox 
-tbox([(sculpteur,and(personne,some(aCree,sculpture))), (auteur,and(personne,some(aEcrit,livre))), (editeur,and(personne,and(not(some(aEcrit,livre)),some(aEdite,livre)))), (parent,and(personne,some(aEnfant,anything)))]).
-
-
-% Abox
-% assertion de concept
-abox_concept([(michelAnge,personne), (david,sculpture), (sonnets,livre), (vinci,personne), (joconde,objet)]).
-% assertions de rôles
-abox_role([(michelAnge, david, aCree), (michelAnge, sonnets, aEcrit),(vinci, joconde, aCree)]).
-

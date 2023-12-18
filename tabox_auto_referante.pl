@@ -6,4 +6,3 @@ rname(creerPar).
 rname(aCree).
 equiv(sculpture,and(objet, all(creePar , sculpture))).
 equiv(sculpteur,and(personne,some(aCree,sculpture))).
-tbox([(sculpture,and(objet, all(creePar , sculpture))), (sculpteur,and(personne,some(aCree,sculpture)))]).

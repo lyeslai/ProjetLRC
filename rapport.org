@@ -1,0 +1,119 @@
+#+TITLE: Rapport projet LRC 
+#+DATE:18/12/2023
+#+AUTHOR: NOM DE FAMILLE ? Lyes
+#+AUTHOR: JAVAID Mohammad-Habib
+
+* Les fichiers 
+Le fichier tabox.pl contient notre abox, et notre tbox.
+Le fichier tabox_auto_referante.pl contient une tbox auto-référente, utile pour réaliser un test de la fonction "non_autoref".
+Le fichier partie_1.pl contient toute la partie 1 du projet.
+
+* Partie 1
+Dans cette partie, nous allons développer le fichier ~partie_1.pl~.
+** Récupérer la tbox et la abox 
+** ~non_autoref~
+
+Pour utiliser ~non_autoref~, il suffit de lui donner le nom de notre concept non atomique, et il retrouvera automatiquement son expression pour réaliser des appels récursifs dessus et ainsi vérifier si le concept non atomique possède des auto-référence :
+#+BEGIN_SRC prolog
+non_autoref(Nom_de_concept, Expr):- non_autoref(Nom_de_concept, Expr, [Nom_de_concept]), !.
+non_autoref(Concept_non_atomique) :- cnamena(Concept_non_atomique), recup_exp_tbox(Concept_non_atomique, Son_exp) , non_autoref(Concept_tbox, Son_exp).
+#+END_SRC
+
+Pour réaliser  ~non_autoref~, nous avons réaliser comme un parcours d'arbre de notre expression, en effectuant un appel récursif sur chaque concept/expression de nos expression de notre grammaire :
+
+#+BEGIN_SRC prolog
+non_autoref(Nom_de_concept, and(Exp1, Exp2), Liste_dejas_vus):-  non_autoref(Nom_de_concept, Exp1, Liste_dejas_vus) , non_autoref(Nom_de_concept, Exp2, Liste_dejas_vus), write(and(Exp1, Exp2)), write(', and  \n').
+
+non_autoref(Nom_de_concept, or(Exp1, Exp2), Liste_dejas_vus):- non_autoref(Nom_de_concept, Exp1, Liste_dejas_vus) , non_autoref(Nom_de_concept, Exp2, Liste_dejas_vus), write(or(Exp1, Exp2)), write(', or \n').
+
+non_autoref(Nom_de_concept, not(Exp), Liste_dejas_vus):-   non_autoref(Nom_de_concept, Exp, Liste_dejas_vus), write(non(Exp)), write(', non \n').
+
+non_autoref(Nom_de_concept, some(_, Exp), Liste_dejas_vus):-  non_autoref(Nom_de_concept, Exp, Liste_dejas_vus), write(Exp), write(', some \n').
+non_autoref(Nom_de_concept, all(_, Exp), Liste_dejas_vus):-  non_autoref(Nom_de_concept, Exp, Liste_dejas_vus), write(Exp), write(', all \n').
+
+#+END_SRC
+
+L'objectif étant d'atteindre les concepts atomiques et non atomique.
+S'il y a un concept atomique, cela ne nous intéresse pas, ce n'est pas ça qui va faire qu'un concept est auto-référent.
+
+Néanmoins, lorsqu'on tombe sur un concept non atomique, alors on vérifie si sont expression ne contient pas un concept non atomique que l'on aurait déjà vu au préalable, ce qui signifierait qu'il est auto-référent.
+
+#+BEGIN_SRC prolog
+non_autoref(_, Concept_atomique, _) :- cnamea(Concept_atomique), write(Concept_atomique),  write(', concept atomique\n').
+non_autoref(_, Concept_non_atomique , Liste_dejas_vus) :-  cnamena(Concept_non_atomique),
+    member(Concept_non_atomique, Liste_dejas_vus),
+    recup_exp_tbox(Concept_non_atomique, Son_exp),
+    non_autoref(Concept_non_atomique, Son_exp, [Concept_non_atomique|Liste_dejas_vus]), write(Concept_non_atomique), write(', concept non atomique\n').
+#+END_SRC
+
+** Concept
+Concept correspond à notre analyse syntaxique.
+
+Pour réaliser concept, on parcoure l'expression du concept comme un arbre, et pour chaque forme que pouvait prendre un concept/expression, vérifier, si les expressions contiennent bien ce qu'ils sont censé contenir (à l'aide de la grammaire).
+
+Typiquement, pour all, on a vérifier si cela contient bien un nom de relation, ainsi qu'un concept.
+#+BEGIN_SRC prolog
+concept(Atomique):- cnamea(Atomique). % contient aussi anything et nothing
+concept(Non_atomique):- cnamena(Non_atomique).
+concept(and(Exp1, Exp2)) :- concept(Exp1), concept(Exp2).
+concept(or(Exp1, Exp2)) :- concept(Exp1), concept(Exp1).
+concept(not(Exp)) :- concept(Exp).
+concept(some(R, C)) :- rname(R) , concept(C).
+concept(all(R, C)) :- rname(R) , concept(C).
+#+END_SRC
+
+** Suppression des concept non atomique
+À expliquer : 
+#+BEGIN_SRC prolog
+suppr_concept_nat(Atomique, Atomique):- cnamea(Atomique). % contient aussi anything et nothing
+suppr_concept_nat(Non_atomique, Son_exp_sans_nat):- recup_exp_tbox(Non_atomique, Son_exp), suppr_concept_nat(Son_exp, Son_exp_sans_nat).
+suppr_concept_nat(and(Exp1, Exp2), and(Exp3, Exp4)) :- suppr_concept_nat(Exp1, Exp3), suppr_concept_nat(Exp2, Exp4).
+suppr_concept_nat(or(Exp1, Exp2), or(Exp3, Exp4)) :- suppr_concept_nat(Exp1, Exp3), suppr_concept_nat(Exp2, Exp4).
+suppr_concept_nat(not(Exp), not(Exp2)) :- suppr_concept_nat(Exp, Exp2).
+suppr_concept_nat(some(R, C), some(R, C2)) :- suppr_concept_nat(C, C2).
+suppr_concept_nat(all(R, C), all(R, C2)) :- suppr_concept_nat(C, C2).
+#+END_SRC
+** Traitement de la tbox
+Nous avons maintenant tout ce qu'il faut pour réaliser notre traitement de la tbox.
+
+Le prédicat ~traitement_Tbox~ possède deux arguments, le premier argument est notre tbox sous forme de liste, et le deuxième argument est le résultat du traitement.
+Le traitement de la tbox se passe en plusieurs étapes :
+1. on commence par vérifier que dans la tête de la liste, le nom du concept non atomique est bien nom de concept non atomique
+2. ensuite, on vérifie que le concept ne s'auto référence pas, on le réalise avant l'analyse syntaxique pour éviter les boucles infinis
+3. on réalise l'analyse syntaxique avec le prédicat concept, qui s'applique à l'expression du concept non atomique
+  - les étapes précédentes correspondent à l'analyse syntaxique et sémantique
+4. on supprime les concepts non atomique de l'expression
+5. on récupère la forme normale négative de l'expression
+6. on continue avec la suite de notre tbox sous forme de liste
+   
+On a ainsi réaliser toutes les vérifications (syntaxique et sémantiques), et récupérer une expression avec uniquement des concepts atomique et sous forme normale négative.
+
+#+BEGIN_SRC prolog
+traitement_Tbox([(Concept_non_atomique, Exp)|T], [(Concept_non_atomique, NewExpNNF)|NewT]):-
+    cnamena(Concept_non_atomique), % 1.
+    non_autoref(Concept_non_atomique), % 2.
+    concept(Exp), % 3.
+    suppr_concept_nat(Exp, NewExp), % 4.
+    nnf(NewExp, NewExpNNF), % 5.
+    traitement_Tbox(T, NewT), !. % 6.
+#+END_SRC
+
+** Traitement de la Abox
+
+Pour le traitement de la Abox, de la même manière, il prend deux arguments, notre liste d'assertion de concepts de notre abox, ainsi que la liste d'assertion de concept de notre abox mais avec uniquement des concepts atomique, sans les concepts non atomique.
+
+On va alors réalisé deux type de traitement :
+- dans le cas où notre instance est défini seulement par un concept atomique, on vérifie simplement que notre instance en est bien une et que notre concept atomique en est bien un, puis on réalise le traitement de la suite de notre liste
+- dans le cas où notre instance est défini par un concept non atomique, on vérifie que notre instance en est bien une et que notre concept non atomique en est bien, et on récupère alors son expression dans la tbox simplifiée (grâce à ~traitement_Tbox~)
+
+
+#+BEGIN_SRC prolog
+traitement_Abox([(Instance, ConceptNonAtomique)|T], [(Instance, SonExpSimplifie)|NouveauT]) :-
+    iname(Instance), cnamena(ConceptNonAtomique),
+    recup_exp_tbox_simplifie(ConceptNonAtomique, SonExpSimplifie), 
+    traitement_Abox(T, NouveauT).
+traitement_Abox([(Instance, ConceptAtomique)|T], [(Instance, ConceptAtomique)|NouveauT]) :-
+    iname(Instance), cnamea(ConceptAtomique),
+    traitement_Abox(T, NouveauT).
+#+END_SRC
+

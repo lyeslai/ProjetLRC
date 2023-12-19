@@ -53,6 +53,8 @@ concept(some(R, C)) :- rname(R) , concept(C).
 concept(all(R, C)) :- rname(R) , concept(C).
 
 
+
+
 % supression concept non atom
 suppr_concept_nat(Atomique, Atomique):- cnamea(Atomique). % contient aussi anything et nothing
 suppr_concept_nat(Non_atomique, Son_exp_sans_nat):- recup_exp_tbox(Non_atomique, Son_exp), suppr_concept_nat(Son_exp, Son_exp_sans_nat).
@@ -63,8 +65,8 @@ suppr_concept_nat(some(R, C), some(R, C2)) :- suppr_concept_nat(C, C2).
 suppr_concept_nat(all(R, C), all(R, C2)) :- suppr_concept_nat(C, C2).
 
 
-/*analyse_semantique à tester, je l'ai différencier de concept, c'est pas très clair dans l'exercice
-/* il faut lui mettre la tbox en paramètre, avec setof, pour analyser la tbox*/
+%analyse_semantique à tester, je l'ai différencier de concept, c'est pas très clair dans l'exercice
+% il faut lui mettre la tbox en paramètre, avec setof, pour analyser la tbox
 traitement_Tbox([], []).
 
 traitement_Tbox([(Concept_non_atomique, Exp)|T], [(Concept_non_atomique, NewExpNNF)|NewT]):-

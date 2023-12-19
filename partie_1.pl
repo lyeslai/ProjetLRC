@@ -1,6 +1,6 @@
 :- consult('tabox.pl').
-% tabox_auto_referante n'est pas censé fonctionné car autoréférente:
-% :- consult('tabox_auto_referante.pl').
+/* tabox_auto_referante n'est pas censé fonctionné car autoréférente: */
+/* :- consult('tabox_auto_referante.pl').*/
 
 recup_tbox(Ma_tbox) :-
     setof((ConceptNA, Expression), equiv(ConceptNA, Expression), Ma_tbox).
@@ -39,10 +39,10 @@ non_autoref(Concept_non_atomique) :- cnamena(Concept_non_atomique), recup_exp_tb
 
 aucun_autoref([]).
 aucun_autoref([H|T]) :- non_autoref(H), aucun_autoref(T).
-% test : non_autoref(sculpteur)
+/* test : non_autoref(sculpteur) */
 
-% concept, faudrait que je le teste
-% on fait aussi une vérification de l'expression ? pour cnamena
+/* concept, faudrait que je le teste */
+/* on fait aussi une vérification de l'expression ? pour cnamena */
 
 concept(Atomique):- cnamea(Atomique). % contient aussi anything et nothing
 concept(Non_atomique):- cnamena(Non_atomique).
@@ -63,8 +63,8 @@ suppr_concept_nat(some(R, C), some(R, C2)) :- suppr_concept_nat(C, C2).
 suppr_concept_nat(all(R, C), all(R, C2)) :- suppr_concept_nat(C, C2).
 
 
-% analyse_semantique à tester, je l'ai différencier de concept, c'est pas très clair dans l'exercice
-% il faut lui mettre la tbox en paramètre, avec setof, pour analyser la tbox
+/*analyse_semantique à tester, je l'ai différencier de concept, c'est pas très clair dans l'exercice
+/* il faut lui mettre la tbox en paramètre, avec setof, pour analyser la tbox*/
 traitement_Tbox([], []).
 
 traitement_Tbox([(Concept_non_atomique, Exp)|T], [(Concept_non_atomique, NewExpNNF)|NewT]):-

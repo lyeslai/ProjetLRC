@@ -2,6 +2,7 @@
 :- consult('partie_1.pl').
 
 
+
 concat([],L1,L1).
 concat([X|Y],L1,[X|L2]) :- concat(Y,L1,L2).
 
@@ -10,6 +11,8 @@ concat([X|Y],L1,[X|L2]) :- concat(Y,L1,L2).
 enleve(X,[X|L],L) :-!.
 enleve(X,[Y|L],[Y|L2]) :- enleve(X,L,L2).
 
+
+compteur(1).
 
 /*genere(Nom) : génère un nouvel identificateur qui est fourni en sortie dans Nom.*/
 
@@ -44,7 +47,8 @@ chiffre_car(9,'9').
 
 programe :- premiere_etape(Tbox,Abi,Abr),
             deuxieme_etape(Abi,Abi1,Tbox),
-            troisieme_etape(Abi1,Abr).
+            troisieme_etape(Abi,Abi1).
+     
 
 
 premiere_etape(Tbox, Abi, Abr) :-    
@@ -80,21 +84,116 @@ acquisition_prop_type1(Abi,Abi1,Tbox):- nl,write("Entrez linstance I : "),
                                     nnf((not(Cnew)),Result),
                                     Abi1 = [(I,Result) | Abi1].
 
-acquisition_prop_type2(Abi,Abi1,Tbox) :- nl,write("Entrez le concept C1 : "),
+acquisition_prop_type2(Abi,[(inst,Result)|Abi],_) :- recup_abox(Abi),
+                                       nl,write("Entrez le concept C1 : "),
                                         nl,read(C1),
                                         nl,write("Entrez le concept C2 : "),
                                         nl,read(C2),
                                         /*Il faut check si c'est un concept et une instanciation)*/
                                         /* si c'est pas atomique on doit replacer par la version atomique*/
                                         concept(and(C1,C2)),                                        
-                                        suppr_concept_nat(and(C1,C2),and(C1new,C2new)),
+                                        suppr_concept_nat(C1,C1new),
+                                        suppr_concept_nat(C2,C2new),
                                         nnf(and(C1new, C2new),Result),
-                                        genere(inst),
-                                        Abi1=[(I,Result)|Abi1],
-                                        nl,write(Abi1).
+                                        genere(inst).
+                                        
+                                       /* nl,write([(inst,Result)|Abi]). */ 
+
+
+/* partie 3 */
+
+troisieme_etape(Abi,Abr) :- tri_Abox(Abi,Lie,Lpt,Li,Lu,Ls),
+resolution(Lie,Lpt,Li,Lu,Ls,Abr),
+nl,write('Youpiiiiii, on a demontre la proposition initiale !!!').                                        
+
+tri_Abox([],[],[],[],[],[]).
+tri_Abox([(I, some(R,C)) | L], [(I, some(R,C)) | Lie], Lpt, Li, Lu, Ls) :- tri_Abox(L, Lie, Lpt, Li, Lu, Ls).
+tri_Abox([(I, all(R,C)) | L], Lie, [(I, all(R,C)) | Lpt], Li, Lu, Ls) :- tri_Abox(L, Lie, Lpt, Li, Lu, Ls).
+tri_Abox([(I, and(C1,C2)) | L], Lie, Lpt, [(I, and(C1,C2)) | Li], Lu, Ls) :- tri_Abox(L, Lie, Lpt, Li, Lu, Ls).
+tri_Abox([(I, or(C1,C2)) | L], Lie, Lpt, Li, [(I, or(C1,C2)) | Lu], Ls) :- tri_Abox(L, Lie, Lpt, Li, Lu, Ls).
+tri_Abox([(I,C)|L], Lie, Lpt, Li, Lu, [(I,C)|Ls]) :- cnamea(C), tri_Abox(L, Lie, Lpt, Li, Lu, Ls).
+tri_Abox([(I,not(C))|L], Lie, Lpt, Li, Lu, [(I,not(C))|Ls]) :- cnamea(C), tri_Abox(L, Lie, Lpt, Li, Lu, Ls).                                        
+
+
+/* test_clash/1 : predicat qui vaut vrai s'il n'y a pas de clash,
+et faux s'il y en a un dans la liste passée en argument */
+test_clash([]).
+test_clash([(I,C)|T]) :- nnf(not(C),Cnnf), not(member((I,Cnnf),T)), test_clash(T).
+
+resolution(Lie,Lpt,Li,Lu,Ls,Abr) :- test_clash(Ls) ,complete_some(Lie,Lpt,Li,Lu,Ls,Abr),
+                                    test_clash(Ls) , transformation_and(Lie,Lpt,Li,Lu,Ls,Abr),
+                                    test_clash(Ls) ,deduction_all(Lie,Lpt,Li,Lu,Ls,Abr),
+                                    test_clash(Ls) ,transformation_or(Lie,Lpt,Li,Lu,Ls,Abr).
+resolution([],[],[],[],Ls,Abr) :- not(test_clash(Ls)).
+
+
+/*Affichage de Abox de roles*/
+affichage_Abr([]).
+affichage_Abr([(A , B , R)| T]) :-  write("<"), write(A), write(","), write(B), write("> : "), write(R), nl, affichage_Abr(Reste).
+
+/*Affichage des liste de la Abox de concept */
+
+affichage([]).
+affichage([A|T]):- affichage(A),affichage(T).
+affichage(C) :- write(C).
+affichage((I,C)) :- nl,write(I), write(' : '), affichage(C).
+affichage(not(C)) :- write('¬'),affichage(C).
+affichage((I,or(C1,C2))) :- nl,write(I),write(' : '), affichage(C1),write(' ⊔ '),affichage(C2).
+affichage((I,and(C1,C2))) :- nl,write(I),write(' : '), affichage(C1),write(' ⊓ '),affichage(C2).
+affichage(all(R,C)) :- write('∀'),write(R),write('.'),affichage(C).
+affichage(some(R,C)) :- write('∃'), write(R), write('.'), affichage(C).
 
 
 
 
 
+affiche_evolution_Abox(Ls, Lie, Lpt, Li, Lu, Abr, Ls1, Lie1, Lpt1, Li1, Lu1, Abr1):-
+    write('Affichage Evolution Abox : Abox de Base'),
+    nl,affichage(Ls),
+    affichage(Lie),
+    affichage(Lpt),
+    affichage(Li),
+    affichage(Lu),
+    affichage_Abr(Abr),
+    nl,write('ABox Apres'),nl,
+    affichage(Ls1),
+    affichage(Lie1),
+    affichage(Lpt1),
+    affichage(Li1),
+    affichage(Lu1),
+    affichage_Abr(Abr1).
 
+/*Ajout d'un nouvelle assertion dans les listes  Lie, Lpt, Li, Lu ou Ls*/
+/*Faut il checker si c'est un cocept ou pas genre concept(some(R,c))*/
+evolue((I,C),Lie,Lpt,Li,Lu,Ls,Lie,Lpt,Li,Lu,Ls1):- concat([(I,C)],Ls,Ls1).
+/*∃ = Lie*/
+evolue((I,some(R,C)),Lie,Lpt,Li,Lu,Ls,Lie1,Lpt,Li,Lu,Ls) :- concat([(I,some(R,C))],Lie,Lie1).
+
+/*∀ = Lpt*/
+evolue((I,all(R,C)),Lie,Lpt,Li,Lu,Ls,Lie,Lpt1,Li,Lu,Ls) :- concat([(I,all(R,C))],Lpt,Lpt1). 
+
+/*⊓ = Li*/
+evolue((I,and(C1,C2)),Lie,Lpt,Li,Lu,Ls,Lie,Lpt,Li1,Lu,Ls) :- concat([(I,and(C1,C2))],Li,Li1).
+
+/*⊔ = Lu*/
+evolue((I,or(C1,C2)),Lie,Lpt,Li,Lu,Ls,Lie,Lpt,Li,Lu1,Ls) :- concat([(I,or(C1,C2))],Lu,Lu1).
+
+/*not = Ls*/
+evolue((I,not(C)),Lie,Lpt,Li,Lu,Ls,Lie,Lpt,Li,Lu,Ls1) :- concat([(I,not(C))],Ls,Ls1).
+
+
+
+
+/*Prédicat complete_some cherchant une assertion de concept de la forme (I,some(R,C)) dans Lie*/
+complete_some([(I,some(R,C))|Lie],Lpt,Li,Lu,Ls,Abr) :- genere(B), /*On génère une instance B*/
+                                                    concat([(I,B,R)], Abr, NewAbr), /*ajour de I, B ,R dans Abr*/
+													evolue((B,C),Lie,Lpt,Li,Lu,Ls,Lie1,Lpt1,Li1,Lu1,Ls1), /*ajout l'assertion de concept*/
+	 											    affiche_evolution_Abox(Ls, [(I,some(R,C))|Lie], Lpt, Li, Lu, Abr, Ls1, Lie1, Lpt1, Li1, Lu1, [(A,B,R)|Abr]),
+												    !,resolution(Lie1, Lpt1, Li1, Lu1, Ls1, NewAbr). /*ajout l'assertion de rôle*/
+
+/*Prédicat transformation_and cherchant une assertion de concept de la forme (I,and(C1,C2)) dans Li*/
+transformation_and(Lie,Lpt,[(I,and(C1,C2))|Li],Lu,Ls,Abr) :- evolue((I,C1),Lie,Lpt,Li,Lu,Ls,Lie1,Lpt1,Li1,Lu1,Ls1),
+    													   evolue((I,C2),Lie1,Lpt1,Li1,Lu1,Ls1,Lie2,Lpt2,Li2,Lu2,Ls2),
+														   nl, affiche_evolution_Abox(Ls, Lie, Lpt, [(I,and(C1,C2))|Li], Lu, Abr, Ls2, Lie2, Lpt2, Li2, Lu2, Abr),
+														   !,resolution(Lie2,Lpt2,Li2,Lu2,Ls2,Abr). /*On ajoute à Ls les deux assertions et l'on résoud*/    
+                                                              

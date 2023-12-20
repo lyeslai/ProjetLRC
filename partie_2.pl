@@ -47,7 +47,7 @@ chiffre_car(9,'9').
 
 programe :- premiere_etape(Tbox,Abi,Abr),
             deuxieme_etape(Abi,Abi1,Tbox),
-            troisieme_etape(Abi,Abi1).
+            troisieme_etape(Abi1,Abr).
      
 
 
@@ -104,7 +104,7 @@ acquisition_prop_type2(Abi,[(inst,Result)|Abi],_) :- recup_abox(Abi),
 
 troisieme_etape(Abi,Abr) :- tri_Abox(Abi,Lie,Lpt,Li,Lu,Ls),
 resolution(Lie,Lpt,Li,Lu,Ls,Abr),
-nl,write('Youpiiiiii, on a demontre la proposition initiale !!!').                                        
+nl,write('Youpiiiiii, on a demontre la proposition initiale !!!'), !.                                        
 
 tri_Abox([],[],[],[],[],[]).
 tri_Abox([(I, some(R,C)) | L], [(I, some(R,C)) | Lie], Lpt, Li, Lu, Ls) :- tri_Abox(L, Lie, Lpt, Li, Lu, Ls).
@@ -120,11 +120,11 @@ et faux s'il y en a un dans la liste passée en argument */
 test_clash([]).
 test_clash([(I,C)|T]) :- nnf(not(C),Cnnf), not(member((I,Cnnf),T)), test_clash(T).
 
-resolution(Lie,Lpt,Li,Lu,Ls,Abr) :- test_clash(Ls) ,complete_some(Lie,Lpt,Li,Lu,Ls,Abr),
-                                    test_clash(Ls) , transformation_and(Lie,Lpt,Li,Lu,Ls,Abr),
-                                    test_clash(Ls) ,deduction_all(Lie,Lpt,Li,Lu,Ls,Abr),
-                                    test_clash(Ls) ,transformation_or(Lie,Lpt,Li,Lu,Ls,Abr).
-resolution([],[],[],[],Ls,Abr) :- not(test_clash(Ls)).
+resolution(Lie,Lpt,Li,Lu,Ls,Abr) :- test_clash(Ls), write('test 1') ,complete_some(Lie,Lpt,Li,Lu,Ls,Abr), write('fin test 1'),
+                                    test_clash(Ls), write('test 2') , transformation_and(Lie,Lpt,Li,Lu,Ls,Abr),
+                                    test_clash(Ls), write('test 3') ,deduction_all(Lie,Lpt,Li,Lu,Ls,Abr),
+                                    test_clash(Ls), write('test 4') ,transformation_or(Lie,Lpt,Li,Lu,Ls,Abr).
+resolution([],[],[],[],Ls,Abr) :- test_clash(Ls).
 
 
 /*Affichage de Abox de roles*/
@@ -185,6 +185,7 @@ evolue((I,not(C)),Lie,Lpt,Li,Lu,Ls,Lie,Lpt,Li,Lu,Ls1) :- concat([(I,not(C))],Ls,
 
 
 /*Prédicat complete_some cherchant une assertion de concept de la forme (I,some(R,C)) dans Lie*/
+complete_some([],_,_,_,_,_).
 complete_some([(I,some(R,C))|Lie],Lpt,Li,Lu,Ls,Abr) :- genere(B), /*On génère une instance B*/
                                                     concat([(I,B,R)], Abr, NewAbr), /*ajour de I, B ,R dans Abr*/
 													evolue((B,C),Lie,Lpt,Li,Lu,Ls,Lie1,Lpt1,Li1,Lu1,Ls1), /*ajout l'assertion de concept*/
@@ -192,8 +193,57 @@ complete_some([(I,some(R,C))|Lie],Lpt,Li,Lu,Ls,Abr) :- genere(B), /*On génère 
 												    !,resolution(Lie1, Lpt1, Li1, Lu1, Ls1, NewAbr). /*ajout l'assertion de rôle*/
 
 /*Prédicat transformation_and cherchant une assertion de concept de la forme (I,and(C1,C2)) dans Li*/
+transformation_and(_,_,[],_,_,_).
 transformation_and(Lie,Lpt,[(I,and(C1,C2))|Li],Lu,Ls,Abr) :- evolue((I,C1),Lie,Lpt,Li,Lu,Ls,Lie1,Lpt1,Li1,Lu1,Ls1),
     													   evolue((I,C2),Lie1,Lpt1,Li1,Lu1,Ls1,Lie2,Lpt2,Li2,Lu2,Ls2),
 														   nl, affiche_evolution_Abox(Ls, Lie, Lpt, [(I,and(C1,C2))|Li], Lu, Abr, Ls2, Lie2, Lpt2, Li2, Lu2, Abr),
 														   !,resolution(Lie2,Lpt2,Li2,Lu2,Ls2,Abr). /*On ajoute à Ls les deux assertions et l'on résoud*/    
                                                               
+
+
+transformation_or(_,_,_,[],_,_).
+transformation_or(Lie,Lpt,Li,[(I,or(C1,C2))|Lu],Ls,Abr) :-
+    % on assert le fait que I est une instance de C1 (première branche)
+    evolue((I,C1),Lie,Lpt,Li,Lu,Ls,Lie1,Lpt1,Li1,Lu1,Ls1),
+    nl,
+    write('Union\n Première branche : \n'),
+    affiche_evolution_Abox(Ls, Lie, Lpt, [(I,or(C1,C2))|Li], Lu, Abr, Ls1, Lie1, Lpt1, Li1, Lu1, Abr),!,
+    write('\n affichage terminé : \n'),
+
+    % on essaye de résoudre la première branche
+    %% write('\n erreur 1 \n'),
+    resolution(Lie1,Lpt1,Li1,Lu1,Ls1,Abr),
+    % on assert le fait que I est une instance de C2 (deuxième branche)
+    evolue((I,C2),Lie,Lpt,Li,Lu,Ls,Lie2,Lpt2,Li2,Lu2,Ls2),
+    write('\n Deuxième branche : \n'),
+    affiche_evolution_Abox(Ls, Lie, Lpt, [(I,or(C1,C2))|Li], Lu, Abr, Ls2, Lie2, Lpt2, Li2, Lu2, Abr), 
+    % on essaye de résoudre la deuxième branche
+    resolution(Lie2,Lpt2,Li2,Lu2,Ls2,Abr), !.
+
+liste_instance_relie(_, _, [], []).
+
+liste_instance_relie(Instance1, Relation, [(Instance1, Instance2, Relation)|Abr], [Instance2|Reste_instance_relie] ) :- liste_instance_relie(Instance1, Relation, Abr, Reste_instance_relie).
+liste_instance_relie(Instance1, Relation, [(Instance1, _, Mauvaise_relation)|Abr], Liste_instance_relie) :- liste_instance_relie(Instance1, Relation, Abr, Liste_instance_relie).
+
+
+% ajout d'une liste d'assertion à la abox qui contient les assertions 
+ajout_liste_instance_a_abi([], _, Lie,Lpt,Li,Lu,Ls, Lie,Lpt,Li,Lu,Ls).
+
+ajout_liste_instance_a_abi([Instance|Reste_Liste_Instance], Concept, Lie,Lpt,Li,Lu,Ls, Lie_final,Lpt_final,Li_final,Lu_final,Ls_final) :- 
+    evolue((Instance, Concept), Lie,Lpt,Li,Lu,Ls, Lie1,Lpt1,Li1,Lu1,Ls1),
+    ajout_liste_instance_a_abi(Reste_Liste_Instance, Concept, Lie1,Lpt1,Li1,Lu1,Ls1,  Lie_final,Lpt_final,Li_final,Lu_final,Ls_final).
+
+
+deduction_all(_,[],_,_,_,_).
+deduction_all(Lie,[(I,all(R,C))|Lpt],Li,Lu,Ls,Abr) :-
+    % on récupère la liste des instances relié à I
+    liste_instance_relie(I, R, Abr, Liste_instance_relie),
+    write("Liste relié : \n"),
+    write(Liste_instance_relie),
+    nl,
+    % on assert le fait que ces instance sont des instances de C
+    ajout_liste_instance_a_abi(Liste_instance_relie, C, Lie, Lpt, Li, Lu, Ls, Lie1, Lpt1, Li1, Lu1, Ls1),
+    % on affiche la liste
+    affiche_evolution_Abox(Lie,[(I,all(R,C))|Lpt],Li,Lu,Ls,Abr, Lie1, Lpt1, Li1, Lu1, Ls1, Abr), ! ,
+    % on passe à la suite de l'arbre
+    resolution(Lie1, Lpt1, Li1, Lu1, Ls1, Abr), !.
